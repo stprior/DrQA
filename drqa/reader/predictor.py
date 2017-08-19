@@ -138,6 +138,24 @@ class Predictor(object):
             results.append(predictions)
         return results
 
+    def embed_questions(self, qbatch):
+        # Tokenize the inputs, perhaps multi-processed.
+        if self.workers:
+            q_tokens = self.workers.map_async(tokenize, qbatch)
+            q_tokens = list(q_tokens.get())
+        else:
+            q_tokens = list(map(self.tokenizer.tokenize, qbatch))
+
+        examples = []
+        for i in range(len(qbatch)):
+            examples.append({
+                    'id': i,
+                    'question': q_tokens[i].words(),
+                    'qlemma': q_tokens[i].lemmas(),
+            })    
+
+        return batchify([vectorize_questions(e, self.model) for e in examples])
+        
     def cuda(self):
         self.model.cuda()
 
