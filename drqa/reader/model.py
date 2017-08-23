@@ -388,6 +388,48 @@ class DocReader(object):
                 pred_score.append(scores[idx_sort])
         return pred_s, pred_e, pred_score
 
+# --------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
+
+    def get_question_embeddings(self, qbatch, async_pool=None):
+        """Run the RNN from prediction to generate question embedding only.
+        Args:
+            qbatch: batch of questions
+            async_pool: If provided, non-gpu post-processing will be offloaded
+              to this CPU process pool.
+        Output:
+            qvec: batch of question embedding vectors
+        If async_pool is given, these will be AsyncResult handles.
+        """
+        # Eval mode
+        self.network.eval()
+
+        # Transfer to GPU
+        if self.use_cuda:
+            inputs = [qbatch if qbatch is None else
+                      Variable(q.cuda(async=True), volatile=True)
+                      for q in qbatch]
+        else:
+            #could this simply be inputs = Variable(qbatch, volatile=True)?
+            inputs = [qbatch if qbatch is None else
+                      Variable(q, volatile=True)
+                      for q in qbatch]
+
+        # Run embedding on tokens of questions
+        q_embed = network.embedding(inputs[0])
+
+        x2_mask = inputs[1]
+        #Encode question with RNN + merge hiddens
+        question_hiddens = self.question_rnn(q_embed, inputs[1])
+        if self.args.question_merge == 'avg':
+            q_merge_weights = layers.uniform_weights(question_hiddens, x2_mask)
+        elif self.args.question_merge == 'self_attn':
+            q_merge_weights = self.self_attn(question_hiddens, x2_mask)
+        question_hidden = layers.weighted_avg(question_hiddens, q_merge_weights)
+
+#should be enough to return a q-vector. Major risk area- is x2_mask passed in?
+
+
     # --------------------------------------------------------------------------
     # Saving and loading
     # --------------------------------------------------------------------------

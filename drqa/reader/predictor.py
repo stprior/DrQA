@@ -11,7 +11,7 @@ import logging
 from multiprocessing import Pool as ProcessPool
 from multiprocessing.util import Finalize
 
-from .vector import vectorize, batchify
+from .vector import vectorize, batchify, vectorize_questions
 from .model import DocReader
 from . import DEFAULTS, utils
 from .. import tokenizers
@@ -138,7 +138,7 @@ class Predictor(object):
             results.append(predictions)
         return results
 
-    def embed_questions(self, qbatch):
+    def tokenize_questions(self, qbatch):
         # Tokenize the inputs, perhaps multi-processed.
         if self.workers:
             q_tokens = self.workers.map_async(tokenize, qbatch)
@@ -154,7 +154,12 @@ class Predictor(object):
                     'qlemma': q_tokens[i].lemmas(),
             })    
 
-        return batchify([vectorize_questions(e, self.model) for e in examples])
+        return examples
+
+    def batch_tokenize_questions(self, qbatch):
+        tokenized = tokenize_questions(qbatch)
+        #vectorize_questions returns a tensor of wordvecs (1 per word), with record id
+        return batchify_questions([vectorize_questions(e, self.model) for e in tokenized])
         
     def cuda(self):
         self.model.cuda()

@@ -11,8 +11,9 @@ import torch
 
 def vectorize_questions(questions, model):
     word_dict = model.word_dict
-    torch.LongTensor([word_dict[w] for w in ex['question']])
+    torch.LongTensor([word_dict[w] for w in questions['question']])
 
+    return question, questions['id']
     
 def vectorize(ex, model, single_answer=False):
     """Torchify a single example."""
@@ -129,3 +130,23 @@ def batchify(batch):
         raise RuntimeError('Incorrect number of inputs per example.')
 
     return x1, x1_f, x1_mask, x2, x2_mask, y_s, y_e, ids
+
+def batchify_questions(batch):
+    """Gather a batch of individual examples into one batch."""
+    NUM_INPUTS = 3
+    NUM_TARGETS = 2
+    NUM_EXTRA = 1
+    
+    ids = [ex[-1] for ex in batch]
+    questions = [ex[0] for ex in batch]
+    
+                                   
+    # Batch questions
+    max_length = max([q.size(0) for q in questions])
+    x2 = torch.LongTensor(len(questions), max_length).zero_()
+    x2_mask = torch.ByteTensor(len(questions), max_length).fill_(1)
+    for i, q in enumerate(questions):
+        x2[i, :q.size(0)].copy_(q)
+        x2_mask[i, :q.size(0)].fill_(0)
+
+    return x2, x2_mask, ids
