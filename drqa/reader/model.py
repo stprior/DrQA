@@ -16,6 +16,8 @@ import copy
 from torch.autograd import Variable
 from .config import override_model_args
 from .rnn_reader import RnnDocReader
+from drqa.reader import layers
+
 
 logger = logging.getLogger(__name__)
 
@@ -408,25 +410,25 @@ class DocReader(object):
         if self.use_cuda:
             inputs = [qbatch if qbatch is None else
                       Variable(q.cuda(async=True), volatile=True)
-                      for q in qbatch]
+                      for q in qbatch[:2]]
         else:
             #could this simply be inputs = Variable(qbatch, volatile=True)?
             inputs = [qbatch if qbatch is None else
                       Variable(q, volatile=True)
-                      for q in qbatch]
+                      for q in qbatch[:2]]
 
         # Run embedding on tokens of questions
-        q_embed = network.embedding(inputs[0])
+        q_embed = self.network.embedding(inputs[0])
 
         x2_mask = inputs[1]
         #Encode question with RNN + merge hiddens
-        question_hiddens = self.question_rnn(q_embed, inputs[1])
+        question_hiddens = self.network.question_rnn(q_embed, inputs[1])
         if self.args.question_merge == 'avg':
             q_merge_weights = layers.uniform_weights(question_hiddens, x2_mask)
         elif self.args.question_merge == 'self_attn':
-            q_merge_weights = self.self_attn(question_hiddens, x2_mask)
+            q_merge_weights = self.network.self_attn(question_hiddens, x2_mask)
         question_hidden = layers.weighted_avg(question_hiddens, q_merge_weights)
-
+        return question_hidden
 #should be enough to return a q-vector. Major risk area- is x2_mask passed in?
 
 

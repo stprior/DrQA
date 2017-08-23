@@ -7,8 +7,14 @@ import json
 import numpy as np
 from tqdm import tqdm
 from drqa.reader import Predictor
-from drqa.reader.vector import vectorize, batchify, vectorize_questions
+from drqa.reader.vector import vectorize, batchify, vectorize_question, batchify_questions
 from sklearn.manifold import TSNE
+
+import torch
+import torch.nn as nn
+from drqa.reader import layers
+
+
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -36,7 +42,9 @@ results = {}
 sampled_questions = np.random.choice(questions,10)
 #embeddings = predictor.embed_questions(sampled_questions)
 tokenized = predictor.tokenize_questions(sampled_questions)
-qdict = sampled_questions[0]
-vectorize_questions(qdict,predictor.model)
+qdict = tokenized[0]
+vq = vectorize_question(qdict,predictor.model)
+bq = batchify_questions([vectorize_question(q, predictor.model) for q in tokenized])
+embeddings = predictor.model.get_question_embeddings(bq)
 
 

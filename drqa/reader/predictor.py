@@ -11,7 +11,7 @@ import logging
 from multiprocessing import Pool as ProcessPool
 from multiprocessing.util import Finalize
 
-from .vector import vectorize, batchify, vectorize_questions
+from .vector import vectorize, batchify, vectorize_question
 from .model import DocReader
 from . import DEFAULTS, utils
 from .. import tokenizers

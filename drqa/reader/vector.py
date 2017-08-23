@@ -9,11 +9,10 @@
 from collections import Counter
 import torch
 
-def vectorize_questions(questions, model):
+def vectorize_question(example, model):
     word_dict = model.word_dict
-    torch.LongTensor([word_dict[w] for w in questions['question']])
-
-    return question, questions['id']
+    qtensor = torch.LongTensor([word_dict[w] for w in example['question']])
+    return qtensor, example['id']
     
 def vectorize(ex, model, single_answer=False):
     """Torchify a single example."""
