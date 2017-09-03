@@ -9,6 +9,7 @@ from tqdm import tqdm
 from drqa.reader import Predictor
 from drqa.reader.vector import vectorize, batchify, vectorize_question, batchify_questions
 from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 
 import torch
 import torch.nn as nn
@@ -39,12 +40,20 @@ with open('/data/drqa/data/datasets/SQuAD-v1.1-dev.json') as f:
                 questions.append(qa['question'])
 
 results = {}
-sampled_questions = np.random.choice(questions,10)
+sampled_questions = np.random.choice(questions,400)
 #embeddings = predictor.embed_questions(sampled_questions)
 tokenized = predictor.tokenize_questions(sampled_questions)
 qdict = tokenized[0]
 vq = vectorize_question(qdict,predictor.model)
 bq = batchify_questions([vectorize_question(q, predictor.model) for q in tokenized])
 embeddings = predictor.model.get_question_embeddings(bq)
+
+#torch.save(embeddings,'qembeddings.torch')
+
+#tsne = TSNE(perplexity=30, n_components=2, init='pca', n_iter=5000, method='exact')
+#two_d_embeddings = tsne.fit_transform(embeddings)
+
+#pca = PCA(50)
+#e2 = pca.fit(embeddings)
 
 
